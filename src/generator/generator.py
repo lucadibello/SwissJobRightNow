@@ -21,6 +21,12 @@ modelText = f.read()
 # Cycle each work
 counter = 0
 for work in data:
+  # Check if work has an email address
+  if not work.get("email"):
+    print("🙈 Oh no!", "'" + work.get("nome") + "'" ,"does not have an email address. Cannot generate presentation letter.")
+    print()
+    continue;
+
   newText = modelText
 
   # Create dir
