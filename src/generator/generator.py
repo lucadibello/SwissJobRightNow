@@ -1,10 +1,12 @@
 # Read JSON file
 from datetime import datetime
 import json
-data = json.load(open("scraper/.temp/jobs.json","r"))
+
+data = json.load(open("src/scraper/.temp/jobs.json","r"))
+config = json.load(open("config/config.json", "r"))
 
 totalWorkPlaces = len(data)
-basePath = "files/"
+basePath = "src/generator/.temp/"
 
 # Import os
 import os
@@ -13,7 +15,7 @@ import os
 import requests
 
 # Read presentation document model (md file)
-f = open("../../model/model.md", "r")
+f = open("src/generator/data/model.md", "r")
 modelText = f.read()
 
 # Cycle each work
