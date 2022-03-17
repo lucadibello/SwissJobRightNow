@@ -23,16 +23,16 @@ app.post('/convert', async (req, res) => {
   console.log(`🔌 Converting MarkDown file to PDF...`)
 
   console.log(`📚 Creating temporary MarkDown file (temp.md)...`)
-  fs.writeFileSync("temp.md", req.body.text)
+  fs.writeFileSync(".temp/temp.md", req.body.text)
 
   console.log("🛠 Converting to PDF...")
-  const pdf = await convertToPdf("temp.md")
+  const pdf = await convertToPdf(".temp/temp.md")
 
   // Check conversion status
   if (pdf) {
     res.contentType('application/pdf')
     res.send(pdf.content)
-    console.log("✅  Document exported successfully")
+    console.log("✅ Document exported successfully")
   } else {
     console.log("❌ Error occurred while exporting PDF")
     res.status(500).send("Cannot export to PDF document")
