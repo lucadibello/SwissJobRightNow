@@ -3,4 +3,8 @@ import bodyParser from 'body-parser';
 import fs from 'fs';
 import { mdToPdf } from 'md-to-pdf';
 
-// CONVERSION SERVER WILL BE HERE
+// Start server + add functionalities
+const app = express()
+const port = 3000
+app.use(bodyParser.urlencoded({extended: true}))
+app.use(bodyParser.json())
