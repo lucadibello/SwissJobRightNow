@@ -1,4 +1,5 @@
 # Read JSON file
+from datetime import datetime
 import json
 data = json.load(open("scraper/.temp/jobs.json","r"))
 
@@ -31,7 +32,7 @@ for work in data:
   newText = modelText.replace("/COMPANY_NAME/", work.get("nome") or "")
   newText = newText.replace("/COMPANY_ZIP_CODE/", work.get("cap") or "")
   newText = newText.replace("/COMPANY_CITY/", work.get("paese") or "")
-  newText = newText.replace("/CURRENT_DATE/", "09.05.2021")
+  newText = newText.replace("/CURRENT_DATE/", datetime.now().strftime("%d.%m.%Y"))
 
   
   # Create new markdown document
