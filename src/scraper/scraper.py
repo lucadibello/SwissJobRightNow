@@ -122,6 +122,6 @@ print(" - Phone numbers not found:", telErrorConter)
 print("")
 
 print("💆 Exporting research data...")
-with open('.temp/output.json', 'w+') as f:
+with open('.temp/jobs.json', 'w+') as f:
     f.write(json.dumps(workDicts,indent=4))
 print("✅ Data exported successfully in 'output.json'")
