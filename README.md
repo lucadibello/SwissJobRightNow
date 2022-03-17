@@ -1,0 +1,3 @@
+# SwissJobRightNow - Find a new job in very little time
+
+WORK IN PROGRESS...
