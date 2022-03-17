@@ -26,10 +26,21 @@ for work in data:
   tempPath = basePath + '/' + work.get("nome").replace("/","")
   
   if (not os.path.exists(tempPath)):
-    os.mkdir(tempPath)
+    os.makedirs(tempPath)
 
-  # Read file
-  newText = modelText.replace("/COMPANY_NAME/", work.get("nome") or "")
+  # Set personal information
+  newText = modelText.replace("/YOUR_NAME/", config.get("presentationLetter").get("your_name"))
+  newText = newText.replace("/YOUR_SURNAME/", config.get("presentationLetter").get("your_surname"))
+  newText = newText.replace("/YOUR_ADDRESS/", config.get("presentationLetter").get("your_address"))
+  newText = newText.replace("/YOUR_ZIP_CODE/", config.get("presentationLetter").get("your_zip_code"))
+  newText = newText.replace("/YOUR_CITY/", config.get("presentationLetter").get("your_city_name"))
+  newText = newText.replace("/YOUR_PHONE_PREFIX/", config.get("presentationLetter").get("your_phone").get("prefix"))
+  newText = newText.replace("/YOUR_PHONE_NUMBER/", config.get("presentationLetter").get("your_phone").get("number"))
+  newText = newText.replace("/START_GREETINGS/", config.get("presentationLetter").get("head_document_greeting"))
+  newText = newText.replace("/DOC_TITLE/", config.get("presentationLetter").get("document_title"))
+
+  # Set company information
+  newText = newText.replace("/COMPANY_NAME/", work.get("nome") or "")
   newText = newText.replace("/COMPANY_ZIP_CODE/", work.get("cap") or "")
   newText = newText.replace("/COMPANY_CITY/", work.get("paese") or "")
   newText = newText.replace("/CURRENT_DATE/", datetime.now().strftime("%d.%m.%Y"))
