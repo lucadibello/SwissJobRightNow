@@ -14,7 +14,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "run": "node app.ts"
+    "start": "ts-node app.ts"
   },
   "author": "",
   "license": "ISC"
