@@ -1,3 +1,4 @@
+from modules.config.config import Config
 from bs4 import BeautifulSoup
 import requests
 import json
@@ -18,14 +19,11 @@ class Scraper:
   isError = False
   isMaxPagesExcedeed = False
 
-  # Page link where all data will be read
-  url = ""
-
   # Create scraper report
   report = ScraperReport()
 
-  def __init__(self, url: str):
-    self.url = url
+  def __init__(self, config: Config):
+    self.config = config.getConfig()
 
   def scrape (self, MAX_PAGES: int) -> ScraperReport :
     # Page counter
@@ -41,7 +39,7 @@ class Scraper:
 
       # Read page data
       print("📚 Page n.", nPage, "/", MAX_PAGES)
-      r = requests.get('https://www.local.ch/it/q/Ticino%20(Regione)/Informatica?slot=tel&page=' + str(nPage))
+      r = requests.get(self.config.get("scraper").get("url") + '?slot=tel&page=' + str(nPage))
 
       # Check page response
       if (r.status_code == 404):
