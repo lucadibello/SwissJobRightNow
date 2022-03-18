@@ -25,12 +25,15 @@ class Scraper:
   def __init__(self, config: Config):
     self.config = config.getConfig()
 
-  def scrape (self, MAX_PAGES: int) -> ScraperReport :
+  def scrape (self) -> ScraperReport :
     # Page counter
     nPage = 0
 
     # Job list as dict
     workDicts = []
+
+    # Save max pages to scrape
+    MAX_PAGES = self.config.get('scraper').get('pagesToScrape')
 
     # Cycle each page
     while (nPage < MAX_PAGES):
