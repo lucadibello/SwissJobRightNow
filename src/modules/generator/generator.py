@@ -80,7 +80,7 @@ class Generator:
       # Create new markdown document
       with open(tempPath + "/LetteraPresentazione.md","w+") as handler:
         handler.write(newText)
-        print("🛠  MarkDown file generated successfully")
+        print("🛠 MarkDown file generated successfully")
 
       print("⌛ Sending file to converter API...")
 
