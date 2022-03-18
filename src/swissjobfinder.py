@@ -1,9 +1,9 @@
-from modules.data import scraper as jobScraper
+from modules import Scraper as JobScraper
 
 MAX_PAGES = 2
 def main ():
   # Init job scraper
-  jobs = jobScraper.Scraper("yolo")
+  jobs = JobScraper("yolo")
   # Scrape + get a scrape report
   report = jobs.scrape(MAX_PAGES)
   # Print report
