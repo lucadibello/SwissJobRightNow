@@ -41,5 +41,5 @@ app.post('/convert', async (req, res) => {
 
 // Start listening on port 3000!
 app.listen(port, () => {
-  console.log(`🤓 Converter is listening at http://localhost:${port}`)
+  console.log(`CONVERSION_SERVER_READY`)
 })
