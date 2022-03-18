@@ -1,6 +1,5 @@
 import subprocess
 from sys import stderr
-import time
 from modules import Config, MailSender
 from modules import Scraper as JobScraper
 from modules import Generator as PresentationLetterGenerator
