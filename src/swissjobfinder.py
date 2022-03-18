@@ -1,7 +1,7 @@
 import subprocess
 from sys import stderr
 import time
-from modules import Config
+from modules import Config, MailSender
 from modules import Scraper as JobScraper
 from modules import Generator as PresentationLetterGenerator
 
@@ -16,10 +16,10 @@ def main ():
 
   # Wait for conversion server to setup
   print("🔎 Waiting for conversion server to setup..")
-
+  
   # Start conversion server
   with subprocess.Popen(
-    args=["yarn", "--cwd", "/Users/lucadibello/Documents/Repo/SwissJobRightNow/src/conversion-server", "start"],
+    args=["yarn", "--cwd", "src/conversion-server", "start"],
     stdout=subprocess.PIPE,
     stderr=subprocess.STDOUT,
     shell=False
@@ -42,5 +42,10 @@ def main ():
 
     # Kill server
     conversionServer.kill()
+  
+  # Send mail
+  mailSender = MailSender(config, report)
+  mailSender.sendAll()
+
 if __name__ == '__main__':
   main()
