@@ -1,3 +1,4 @@
+from enum import Enum
 from xmlrpc.client import Boolean
 from modules.config.config import Config
 from modules.data.scraper import ScraperReport
@@ -6,11 +7,27 @@ from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
 import smtplib, ssl
 
+class EmailSenderStatus(Enum):
+  OK = 1
+  NO_EMAIL = 2
+  ERROR = 3
+
+class MailSenderReport:
+  emailSentCounter = 0
+  emailErrorCounter = 0
+
+  def increaseSentCounter(self):
+    self.emailSentCounter += 1
+
+  def increaseErrorCounter(self):
+    self.emailErrorCounter += 1
+
 class MailSender:
 
   def __init__(self, config: Config, report: ScraperReport):
     self.config = config.getConfig()
-    self.report = report
+    self.scraperReport = report
+    self.report = MailSenderReport()
 
   def sendAll (self):
     # Create session
@@ -25,63 +42,88 @@ class MailSender:
         self.config.get("email").get("smtp").get("password")
       )
 
-      # All jobs
-      for job in self.report.jobs:
-        print(job)
+      # Override data to test
+      self.scraperReport.jobs = [
+        {
+          "nome": "L'Officina Informatica SAGL",
+          "paese": "Bellinzona",
+          "cap": "6500",
+          "address": "Via San Gottardo",
+          "houseNumber": "8",
+          "email": None,
+          "telefono": "077 943 03 37",
+          "page": 1,
+          "link": "https://www.local.ch/it/q/Sottoceneri%20(Regione)/informatica?page=1"
+        },
+        {
+          "nome": "Team Informatica SA",
+          "paese": "Novazzano",
+          "cap": "6883",
+          "address": "Via Roncaglia",
+          "houseNumber": "3",
+          "email": "luca6469@gmail.com",
+          "telefono": "091 922 92 81",
+          "page": 1,
+          "link": "https://www.local.ch/it/q/Sottoceneri%20(Regione)/informatica?page=1"
+        },
+      ]
 
+      # All jobs
+      for job in self.scraperReport.jobs:
         # Send mail to company
         status = self._sendMail(job, mailServer)
 
         # Check status
-        if (status):
+        if (status == EmailSenderStatus.OK):
           print("✅ Email sent successfully")
-        else:
-          print("----> Cannot send E-Mail")
+        elif (status == EmailSenderStatus.NO_EMAIL):
+          print("🙃 I didn't find an email address for this company, cannot send E-Mail")
+        elif (status == EmailSenderStatus.ERROR):
+          print("❌ Error occurred while sending E-Mail")
 
-
-  def _sendMail (self, job: dict, mailServer: smtplib.SMTP_SSL) -> Boolean:
+  def _sendMail (self, job: dict, mailServer: smtplib.SMTP_SSL) -> EmailSenderStatus:
     # Check if job entry has an email
     if job.get("email") is not None:
+      try:
+        # Build message
+        message = MIMEMultipart()
+        message["Subject"] = self.config.get("email").get("subject")
+        message["From"] = self.config.get("email").get("senderMail")
+        message["To"] = job.get("email")
 
-      # Build message
-      message = MIMEMultipart()
-      message["Subject"] = self.config.get("email").get("subject")
-      message["From"] = self.config.get("email").get("senderMail")
+        # Set message body
+        message.attach(MIMEText("\n".join(self.config.get("email").get("body"))))
 
-      # Set message body
-      message.attach(MIMEText("\n".join(self.config.get("email").get("body"))))
+        # Load each attachment
+        for attachment in self.config.get("email").get("additionalAttachments"):
+          # Path
+          file = MIMEApplication(
+            open(attachment.get("path"), "rb").read(),
+            Name=attachment.get("customName")
+          )
 
-      # Load each attachment
-      for attachment in self.config.get("email").get("additionalAttachments"):
-        print(attachment)
+          # Attach file
+          message.attach(file)
+        
+        # Attach presentation letter to email
+        filePath = "src/modules/generator/.temp/%s/LetteraPresentazione.pdf" % job.get("nome").replace("/","")
+        message.attach(MIMEApplication(
+          open(filePath, "rb").read(),
+          Name=self.config.get("email").get("presentationLetterCustomName")
+        ))
 
-        # Path
-        file = MIMEApplication(
-          open(attachment.get("path"), "rb").read(),
-          Name=attachment.get("customName")
+        # Send email
+        mailServer.send_message(
+          message,
+          self.config.get("email").get("senderMail"),
+          job.get("email")
         )
-
-        # Attach file
-        message.attach(file)
-
-      # Set destination address as 'To' Header
-      # message["To"] = job.get("email")
-      message["To"] = "luca6469@gmail.com"
-      
-      # Attach presentation letter to email
-      filePath = "src/modules/generator/.temp/%s/LetteraPresentazione.pdf" % job.get("nome").replace("/","")
-      message.attach(MIMEApplication(
-        open(filePath, "rb").read(),
-        Name=self.config.get("email").get("presentationLetterCustomName")
-      ))
-
-      # Send email
-      mailServer.send_message(
-        message,
-        self.config.get("email").get("senderMail"),
-        "luca6469@gmail.com"
-      )
-      return True
+        return EmailSenderStatus.OK
+      except Exception as e:
+        # Print error
+        print(e)
+        # Return status
+        return EmailSenderStatus.ERROR
     else:
-      return False
+      return EmailSenderStatus.NO_EMAIL
 
