@@ -8,7 +8,6 @@ Each person has different potentialities and requirements, that's why SwissJobFi
 
 ## Showcase
 
-
 ## Setup
 
 ### Config file
@@ -46,6 +45,53 @@ python3 src/swissjobfinder.py -A -R Lugano Parrucchiere
 ```
 
 **Important note:** It is best to write the kind of job you want using the native language of the place where you are actually looking for work. The program will find more results this way
+
+## Config file explination
+
+```json
+{
+  "scraper": {
+    "pagesToScrape": <NUMBER OF PAGES TO READ - 10 per page>
+  },
+  "email": {
+    "smtp": {
+      "port": <SMTP PORT>,
+      "server": <SMTP SERVER>,
+      "email": <SMTP EMAIL>,
+      "password": <SMTP PASSWORD>
+    },
+    "senderMail": <SHOWN EMAIL ADDRESS>,
+    "subject": <EMAIL SUBJECT>,
+    "body": [
+      <BODY - MULTILINE>
+    ],
+    "additionalAttachments": [
+      {
+        "path": <ATTACHMENT PATH>,
+        "customName": <CUSTOM FILE NAME>
+      }
+    ],
+    "presentationLetterCustomName": <PRESENTATION LETTER FILENAME>
+  },
+  "presentationLetter": {
+    "model_path": <PRESENTATION LETTER MODEL FILE>,
+    "your_name": <YOUR NAME>,
+    "your_surname": <YOUR SURNAME>,
+    "your_phone": {
+      "prefix": <PREFIX>,
+      "number": <YOUR PHONE NUMBER>
+    },
+    "your_city_name": <YOUR CITY>,
+    "your_address": <YOUR ADDRESS>,
+    "your_zip_code": <YOUR ZIP CODE>,
+    "document_title": <DOCUMENT TITLE>,
+    "head_document_greeting": <GREETING>,
+    "document_body": [
+      <DOCUMENT BODY - MULTILINE>
+    ]
+  }
+}
+```
 
 ## Conclusion
 
