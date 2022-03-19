@@ -10,7 +10,12 @@ def main ():
   # Compute args with argparse 
   parser = argparse.ArgumentParser(description="""
     Welcome to SwissJobFinder! This CLI helps you to find your dream job 
-    in very little time using data from well-known Local.CH website. !!! Remember to setup your config.json !!!""")
+    in very little time. This suite automatically finds possible jobs and
+    generates a presentation letter for each company. Finally, it sends an
+    email with the cover letter and other custom attachments
+    (specified via config.json) to the company automatically.
+    Author: Luca Di Bello - @lucadibello.ch""")
+    
   parser.add_argument("area", metavar="JOB_AREA", type=str, help="Set an area (City, Region or Canton) where you want to work. Specify the kind of area with related flags. By default Area is a city.")
   parser.add_argument("kind", metavar="JOB_KIND", nargs='+',type=str, help="Set the kind of job desired (ex: Computer Science)")
   parser.add_argument("-A", action="store_true", help="Send E-Mail to any kind of contact (companies and privates). By default the application are sent only to company contacts")
@@ -78,7 +83,6 @@ def main ():
   print("⌛ Starting clean-up process...")
   letterGenerator.cleanUp()
   print("✅ Finished. All temp files has been removed", dir)
-
 
 if __name__ == '__main__':
   main()
