@@ -29,7 +29,7 @@ class MailSender:
     self.scraperReport = report
     self.report = MailSenderReport()
 
-  def sendAll (self):
+  def sendAll (self) -> MailSenderReport:
     # Create session
     with smtplib.SMTP_SSL(
       host=self.config.get("email").get("smtp").get("server"),
@@ -42,32 +42,6 @@ class MailSender:
         self.config.get("email").get("smtp").get("password")
       )
 
-      # Override data to test
-      self.scraperReport.jobs = [
-        {
-          "nome": "L'Officina Informatica SAGL",
-          "paese": "Bellinzona",
-          "cap": "6500",
-          "address": "Via San Gottardo",
-          "houseNumber": "8",
-          "email": None,
-          "telefono": "077 943 03 37",
-          "page": 1,
-          "link": "https://www.local.ch/it/q/Sottoceneri%20(Regione)/informatica?page=1"
-        },
-        {
-          "nome": "Team Informatica SA",
-          "paese": "Novazzano",
-          "cap": "6883",
-          "address": "Via Roncaglia",
-          "houseNumber": "3",
-          "email": "luca6469@gmail.com",
-          "telefono": "091 922 92 81",
-          "page": 1,
-          "link": "https://www.local.ch/it/q/Sottoceneri%20(Regione)/informatica?page=1"
-        },
-      ]
-
       # All jobs
       for job in self.scraperReport.jobs:
         # Send mail to company
@@ -76,10 +50,16 @@ class MailSender:
         # Check status
         if (status == EmailSenderStatus.OK):
           print("✅ Email sent successfully")
+          self.report.increaseSentCounter()
         elif (status == EmailSenderStatus.NO_EMAIL):
           print("🙃 I didn't find an email address for this company, cannot send E-Mail")
+          self.report.increaseErrorCounter()
         elif (status == EmailSenderStatus.ERROR):
           print("❌ Error occurred while sending E-Mail")
+          self.report.increaseErrorCounter()
+    
+    # Return report
+    return self.report
 
   def _sendMail (self, job: dict, mailServer: smtplib.SMTP_SSL) -> EmailSenderStatus:
     # Check if job entry has an email
