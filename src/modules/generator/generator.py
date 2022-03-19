@@ -30,7 +30,7 @@ class Generator:
     # Generate each job
     for work in self.report.jobs:
       # Generate each document
-      status = self._generate(work, modelText)
+      status = self.__generate(work, modelText)
       if status == GenerationStatus.OK:
         # Document generated
         counter += 1
@@ -44,7 +44,24 @@ class Generator:
         # Cannot generate
         print("❌ An error has occurred during the generation process, skip this job")
 
-  def _generate(self, job: dict, modelText: str) -> GenerationStatus:
+  def cleanUp(self) -> None:
+    self.__cleanDirectory(self.BASE_PATH)
+
+  def __cleanDirectory (self, dir: str) -> None:
+    for filename in os.listdir(dir):
+      file_path = os.path.join(dir, filename)
+      try:
+        if os.path.isfile(file_path) or os.path.islink(file_path):
+            os.unlink(file_path)
+        elif os.path.isdir(file_path):
+            # Clear content
+            self.__cleanDirectory(file_path)
+            # Delete directory
+            os.rmdir(file_path)
+      except Exception as e:
+          print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+  def __generate(self, job: dict, modelText: str) -> GenerationStatus:
     # Check if work has an email address
     if not job.get("email"):
       return GenerationStatus.NO_EMAIL
