@@ -15,8 +15,10 @@ class QueryBuilder:
     baseString = cls.__LOCAL_BASE_QUERY_STRING + "/" + parser.quote(area) + "/" + parser.quote(jobKind)
  
     if onlyCompanies:
-      # Add filter for companies
-      baseString += "?filter[entry_type]=business"
+      # Add filter for companies + page flag
+      baseString += "?filter[entry_type]=business&page="
+    else:
+      baseString += "?page="
     
     # Return query string
     return baseString
