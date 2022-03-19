@@ -30,7 +30,6 @@ def main ():
 
   # Build URL with QueryUrlBuilder
   dataUrl = QueryBuilder.build_page_query_link(args.area, ' '.join(args.kind), args.R, args.C, not args.A)
-  print(dataUrl)
 
   # Load config file
   config = Config("config/config.json")
@@ -47,6 +46,14 @@ def main ():
   print(" - Total of contacts without E-Mail:", report.nJobsWithoutEmail)
   print(" - Total of contacts without phone number:", report.nJobsWithoutNumber)
 
+  # Check if there are valid E-Mails:
+  if len(report.jobs) - report.nJobsWithoutEmail - report.nJobsWithoutNumber <= 0:
+    print()
+    print("❌ Please change your search filter. I cannot find any contact with a valid E-Mail address")
+    exit()
+
+  # Wait for user input to continue
+  print()
   input("Press enter to continue with presentation letter generation...")
 
   # Wait for conversion server to setup
