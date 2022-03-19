@@ -22,8 +22,9 @@ class Scraper:
   # Create scraper report
   report = ScraperReport()
 
-  def __init__(self, config: Config):
+  def __init__(self, config: Config, url: str):
     self.config = config.getConfig()
+    self.dataUrl = url
 
   def scrape (self) -> ScraperReport :
     # Page counter
@@ -42,7 +43,7 @@ class Scraper:
 
       # Read page data
       print("📚 Page n.", nPage, "/", MAX_PAGES)
-      r = requests.get(self.config.get("scraper").get("url") + '?slot=tel&page=' + str(nPage))
+      r = requests.get(self.dataUrl)
 
       # Check page response
       if (r.status_code == 404):
