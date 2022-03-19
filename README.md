@@ -6,6 +6,12 @@ Find your dream job with SwissJobFinder. This suite allows you to send applicati
 
 Each person has different potentialities and requirements, that's why SwissJobFinder is extremely flexible in order to satisfy (almost) every kind of user: you can modify every single detail related to the search, the generation and the sending of applications.
 
+## Results
+
+Note: This is a real result. I personally used this tool to search for my internship position this year!
+
+![image](https://user-images.githubusercontent.com/37295664/159128276-33a0bf00-8fb9-405a-bb51-f8776cb1db18.png)
+
 ## Setup
 
 ### Config file
