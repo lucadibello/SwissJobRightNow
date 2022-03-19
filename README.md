@@ -6,8 +6,6 @@ Find your dream job with SwissJobFinder. This suite allows you to send applicati
 
 Each person has different potentialities and requirements, that's why SwissJobFinder is extremely flexible in order to satisfy (almost) every kind of user: you can modify every single detail related to the search, the generation and the sending of applications.
 
-## Showcase
-
 ## Setup
 
 ### Config file
