@@ -8,7 +8,7 @@ Each person has different potentialities and requirements, that's why SwissJobFi
 
 ## Results
 
-Note: This is a real result. I personally used this tool to search for my internship position this year!
+Note: This is a real result. I personally used this tool to look for my internship position this year!
 
 ![image](https://user-images.githubusercontent.com/37295664/159128276-33a0bf00-8fb9-405a-bb51-f8776cb1db18.png)
 
