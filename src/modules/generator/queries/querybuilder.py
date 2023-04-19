@@ -1,10 +1,10 @@
 import urllib.parse as parser
 
 class QueryBuilder:
-  __LOCAL_BASE_QUERY_STRING = "https://www.local.ch/it/q"
+  __LOCAL_BASE_QUERY_STRING = "https://www.local.ch/it/s"
   
   @classmethod
-  def build_page_query_link (cls, area: str, jobKind: str, isAreaARegion: bool, isAreaACanton: bool, onlyCompanies: bool = True) -> str:
+  def build_page_query_link (cls, area: str, jobKind: str, isAreaARegion: bool, isAreaACanton: bool) -> str:
     # Build area string
     if (isAreaARegion):
       area += " (Regione)"
@@ -13,12 +13,7 @@ class QueryBuilder:
 
     # Build URL
     baseString = cls.__LOCAL_BASE_QUERY_STRING + "/" + parser.quote(area) + "/" + parser.quote(jobKind)
- 
-    if onlyCompanies:
-      # Add filter for companies + page flag
-      baseString += "?filter[entry_type]=business&page="
-    else:
-      baseString += "?page="
+    baseString += "?&search=s&page="
     
     # Return query string
     return baseString

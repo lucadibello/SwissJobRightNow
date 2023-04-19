@@ -1,139 +1,163 @@
+import re
 from modules.config.config import Config
 from bs4 import BeautifulSoup
 import requests
 import json
 
-class ScraperReport:
-  jobs = []
-  nJobsWithoutNumber = 0
-  nJobsWithoutEmail = 0
 
-  def increaseJobsWithoutNumber(self):
-    self.nJobsWithoutNumber += 1
-  
-  def increaseJobsWithoutEmail(self):
-    self.nJobsWithoutEmail += 1
+class ScraperReport:
+    jobs = []
+    nJobsWithoutAnyPhoneNumber = 0
+    nJobsWithoutAnyEmailAddress = 0
+    nJobsWithoutAnyFaxNumber = 0
+
+    def increaseJobsWithoutAnyPhoneNumber(self):
+        self.nJobsWithoutAnyPhoneNumber += 1
+
+    def increaseJobsWithoutAnyEmailAddress(self):
+        self.nJobsWithoutAnyEmailAddress += 1
+
+    def increaseJobsWithoutAnyFaxNumber(self):
+        self.nJobsWithoutAnyFaxNumber += 1
+
 
 class Scraper:
-  # Error flags
-  isError = False
-  isMaxPagesExcedeed = False
+    # Error flags
+    isError = False
+    isMaxPagesExcedeed = False
 
-  # Create scraper report
-  report = ScraperReport()
+    # Create scraper report
+    report = ScraperReport()
 
-  def __init__(self, config: Config, url: str):
-    self.config = config.getConfig()
-    self.dataUrl = url
+    def __init__(self, config: Config, url: str):
+        self.config = config.getConfig()
+        self.dataUrl = url
+        # Compute base url (http://www.example.com) from data url (http://www.example.com/page/1)
+        self.baseUrl = self.dataUrl.split(
+            "/")[0] + "//" + self.dataUrl.split("/")[2]
 
-  def scrape (self) -> ScraperReport :
-    # Page counter
-    nPage = 0
+    def _isEmailValid(self, email: str) -> bool:
+        # ensure that scraped email is actually an email using a regex
+        return re.match(r"[^@]+@[^@]+\.[^@]+", email)
 
-    # Job list as dict
-    workDicts = []
+    def _isPhoneValid(self, phone: str) -> bool:
+        # ensure that scraped phone is actually a phone using a regex
+        return re.match(r"^[0-9\-\+]{9,15}$", phone)
 
-    # Save max pages to scrape
-    MAX_PAGES = self.config.get('scraper').get('pagesToScrape')
+    def scrape(self) -> ScraperReport:
+        # Page counter
+        nPage = 0
 
-    # Cycle each page
-    while (nPage < MAX_PAGES):
-      # Increment page counter
-      nPage += 1
+        # Job list as dict
+        workDicts = []
 
-      # Read page data
-      print("📚 Page n.", nPage, "/", MAX_PAGES)
-      r = requests.get(self.dataUrl + str(nPage))
+        # Save max pages to scrape
+        MAX_PAGES = self.config.get('scraper').get('pagesToScrape')
 
-      # Check page response
-      if (r.status_code == 404):
-        # Throw exception
-        raise Exception("❌ Cannot perform request. Status code 404")
-  
-      # Create scraper object
-      soup = BeautifulSoup(r.text, "html.parser")
+        # Cycle each page
+        while (nPage < MAX_PAGES):
+            # Increment page counter
+            nPage += 1
 
-      # Read all information from page
-      for idx, item in enumerate(soup.find_all("div", class_="js-entry-card-container")):
-        workJson = item.find("a", class_="card-info").get("data-gtm-json")
-        contactsJson = item.find("div", class_="entry-actions")
+            # Read page data
+            print("📚 Page n.", nPage, "/", MAX_PAGES)
+            r = requests.get(self.dataUrl + str(nPage))
 
-        tel = ""
-        mail = ""
-        if contactsJson is not None:
-          # Read phone number
-          tel = contactsJson.find("span",class_="visible-print action-button text-center")
-          # Read email
-          mail = contactsJson.find("a", class_="js-gtm-event js-kpi-event action-button text-center hidden-xs hidden-sm action-button-default")
+            # Check page response
+            if (r.status_code == 404):
+                # Throw exception
+                raise Exception("❌ Cannot perform request. Status code 404")
 
-          # Check if present
-          if mail is not None:
-            # Phone found
-            mail = mail.get("href")[7::]
-            print("✅ Email found:", mail)
-          else:
-            # Email not found
-            print("❌  Email not found")
-            self.report.increaseJobsWithoutEmail()
+            # Create scraper object
+            soup = BeautifulSoup(r.text, "html.parser")
 
-          # Check if phone number is present
-          if tel is not None:
-            # Phone found
-            tel = tel.text.strip()
-            print("✅  Phone number found", tel)
-          else:
-            # Phone not found
-            print("❌  Phone number not found")
-            self.report.increaseJobsWithoutNumber()
-        else:
-          # Email and phone not found!
-          print("❌ Contacts (Email or Phone) not found, skip this job")
-          self.report.increaseJobsWithoutEmail()
-          self.report.increaseJobsWithoutNumber()
+            # Read all information from page
+            for idx, item in enumerate(soup.find_all("div", class_="SearchResultList_listElementWrapper__W8zI9")):
+                # Find URL of job
+                jobUrl = item.find("a", role="button").get("href")
 
-        full = item.find("div", class_="card-info-address").find("span").text.split(", ")
+                # Send request to job page
+                print("📝 Reading job at URL:", self.baseUrl + jobUrl)
+                jobPage = requests.get(self.baseUrl + jobUrl)
 
-        # Read house number
-        try:
-          houseNumber = full[0].split()[-1]
-        except:
-          houseNumber = ""
+                # Check job page response
+                if (jobPage.status_code == 404):
+                    # Throw exception
+                    raise Exception(
+                        "❌ Cannot perform request. Status code 404")
 
-        # Read CAP
-        try:
-          cap = full[1].split()[0]
-        except:
-          cap = ""
-        
-        # Read address
-        try:
-          data = full[0].split()
-          houseNumberIndex = len(data) - 1
-          address = ' '.join(data[0:houseNumberIndex])
-        except:
-          address = ""
+                # Create scraper object
+                jobSoup = BeautifulSoup(jobPage.text, "html.parser")
 
-        # Convert to dict
-        workDict = json.loads(workJson)
+                # Find all data (CAP, Address, House Number, Email, Phone)
 
-        # Notify user
-        print("😎 Found new possible job:", workDict.get("DetailEntryName"))
-        print("")
+                # Find Email and Phone
+                jobInfos = jobSoup.find("div", class_="ContactDetailsRow_contactInfoCol__YTnBJ").find_all(
+                    "li", class_="ContactGroupsAccordion_contactGroup__X_P0h")
+                jobinfoAddressDiv = jobSoup.find(
+                    "div", class_="DetailMapPreview_address__1MsKy")
 
-        # Append data to dict
-        workDicts.append({
-          'nome': workDict.get("DetailEntryName"),
-          'paese': workDict.get("DetailEntryCity"),
-          'cap': cap,
-          'address': address,
-          'houseNumber': houseNumber,
-          'email': mail,
-          'telefono': tel,
-          'page': (nPage-1),
-          'link': 'https://www.local.ch/it/q/Sottoceneri%20(Regione)/informatica?page=' + str(nPage-1)
-        })
+                # Extract emails, phones and fax
+                jobEmails = []
+                jobPhones = []
+                jobFaxes = []
+                for jobInfo in jobInfos:
+                    # Try to understand the kind of information from the title of the div
+                    jobInfoTitle = jobInfo.find(
+                        "label", class_="ContactGroupsAccordion_contactType__h__MX").text
 
-    # Save data inside report
-    self.report.jobs = workDicts
-    # Return all data
-    return self.report
+                    # Find all links inside the div
+                    links = jobInfo.find_all(
+                        "a", class_="l--link ContactGroupsAccordion_accordionGroupValue__Hbe1d")
+
+                    #  Parse links based on the kind of information
+                    if (jobInfoTitle.startswith("Tele")):
+                        found = False
+                        for link in links:
+                            phone = link.get("href").replace("tel:", "")
+                            if (self._isPhoneValid(phone)):
+                                found = True
+                                jobPhones.append(
+                                    link.get("href").replace("tel:", ""))
+                        if not found:
+                            self.report.increaseJobsWithoutAnyPhoneNumber()
+                    if (jobInfoTitle.startswith("Email")):
+                        found = False
+                        for link in links:
+                            email = link.get("href").replace("mailto:", "")
+                            if (self._isEmailValid(email)):
+                                found = True
+                                jobEmails.append(
+                                    link.get("href").replace("mailto:", ""))
+                        if not found:
+                            self.report.increaseJobsWithoutAnyEmailAddress()
+                    if (jobInfoTitle.startswith("Fax")):
+                        found = False
+                        for link in links:
+                            fax = link.get("href").replace("fax:", "")
+                            if (self._isPhoneValid(fax)):
+                                found = True
+                                jobFaxes.append(
+                                    link.get("href").replace("fax:", ""))
+                        if not found:
+                            self.report.increaseJobsWithoutAnyFaxNumber()
+
+                # Extract address from other div
+                jobAddress = jobinfoAddressDiv.find(
+                    "a", class_="l--link DetailMapPreview_addressValue__8Gcm2").text
+
+                workDicts.append({
+                    "url": self.baseUrl + jobUrl,
+                    "emails": jobEmails,
+                    "phones": jobPhones,
+                    "faxes": jobFaxes,
+                    "address": jobAddress
+                })
+
+                print("📝 Job n.", idx + 1, "read successfully:", len(jobEmails), "emails,",
+                      len(jobPhones), "phones,", len(jobFaxes), "faxes")
+
+        # Save data inside report
+        self.report.jobs = workDicts
+        # Return all data
+        return self.report
