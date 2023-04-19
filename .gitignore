@@ -2,3 +2,4 @@
 model/model.md
 .DS_Store
 __pycache__
+temp/
