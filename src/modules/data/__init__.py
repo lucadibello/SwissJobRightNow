@@ -1,1 +1,1 @@
-from .scraper import Scraper
+from .scraper import Scraper, ScraperReport

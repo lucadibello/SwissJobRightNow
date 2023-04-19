@@ -1,4 +1,5 @@
 from enum import Enum
+import time
 from xmlrpc.client import Boolean
 from modules.config.config import Config
 from modules.data.scraper import ScraperReport
@@ -41,27 +42,41 @@ class MailSender:
             context=ssl.create_default_context()
         ) as mailServer:
             # Login to mailserver
-            mailServer.login(
-                self.config.get("email").get("smtp").get("email"),
-                self.config.get("email").get("smtp").get("password")
-            )
+            doLogin = True
 
-            # All jobs
-            for job in self.scraperReport.jobs:
+            for idx, job in enumerate(self.scraperReport.jobs):
+
+                # Check if login is required
+                if doLogin:
+                    mailServer.login(
+                        self.config.get("email").get("smtp").get("email"),
+                        self.config.get("email").get("smtp").get("password")
+                    )
+                    doLogin = False
+
+                # Wait 1 second per E-Mail to prevent spamming
+                time.sleep(1)
+
                 # Send mail to company
                 status = self._sendMail(job, mailServer)
 
                 # Check status
                 if (status == EmailSenderStatus.OK):
-                    print("✅ Email sent successfully")
+                    print("Job", idx, " - ✅ Email sent successfully to:",
+                          ",".join(job.get("emails")))
                     self.report.increaseSentCounter()
                 elif (status == EmailSenderStatus.NO_EMAIL):
                     print(
-                        "🙃 I didn't find an email address for this company, cannot send E-Mail")
+                        "Job", idx, "- 🙃 I didn't find an email address for this company, cannot send E-Mail")
                     self.report.increaseErrorCounter()
                 elif (status == EmailSenderStatus.ERROR):
-                    print("❌ Error occurred while sending E-Mail")
+                    print("Job", idx, "- ❌ Error occurred while sending E-Mail")
                     self.report.increaseErrorCounter()
+
+                    # Wait 1 minute to prevent spamming
+                    print("Waiting 1 minute to prevent spamming...")
+                    doLogin = True
+                    time.sleep(60)
 
         # Return report
         return self.report
@@ -102,15 +117,11 @@ class MailSender:
                     ))
 
                 # Send email
-                '''
                 mailServer.send_message(
                     message,
                     self.config.get("email").get("senderMail"),
                     job.get("email")
                 )
-                '''
-                print("Sending email to %s" % ", ".join(job.get("emails")))
-                print(message)
                 return EmailSenderStatus.OK
             except Exception as e:
                 # Print error

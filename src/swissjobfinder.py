@@ -1,8 +1,10 @@
+import json
+import os
 import subprocess
 from sys import stderr
 import time
 from modules import Config, MailSender
-from modules import Scraper as JobScraper
+from modules import Scraper as JobScraper, ScraperReport
 from modules import Generator as PresentationLetterGenerator
 from modules import QueryBuilder
 import argparse
@@ -11,7 +13,7 @@ import argparse
 def main():
     # Compute args with argparse
     parser = argparse.ArgumentParser(description="""
-    Welcome to SwissJobFinder! This CLI helps you to find your dream job 
+    Welcome to SwissJobFinder! This CLI helps you to find your dream job
     in very little time. This suite automatically finds possible jobs and
     generates a presentation letter for each company. Finally, it sends an
     email with the cover letter and other custom attachments
@@ -40,67 +42,115 @@ def main():
     # Load config file
     config = Config("config/config.json")
 
-    # Init job scraper
-    jobs = JobScraper(config, dataUrl)
+    # Check if temp file exists
+    doScan = True
+    if os.path.exists("temp/recover.json"):
+        #  Ask user if he wants to use the temp file
+        print("📁 Recover file found. Do you want to use it? (y/n)")
+        answer = input()
+        # Check answer
+        if answer == "y":
+            doScan = False
+        else:
+            print("🗑️ Removing temp file...")
+            os.remove("temp/recover.json")
 
-    # Scrape + get a scrape report
-    startTime = time.time()
-    report = jobs.scrape()
-    print("🕒 Scraping took ", time.time() - startTime, "seconds")
+    report = None
+    if doScan:
+        # Init job scraper
+        jobs = JobScraper(config, dataUrl)
 
-    # Print report
-    print("📊 SwissJobRightNow - Finder report")
-    print(" - Total of contacts found:", len(report.jobs))
-    print(" - Total of contacts without E-Mail:",
-          report.nJobsWithoutAnyEmailAddress)
-    print(" - Total of contacts without phone number:",
-          report.nJobsWithoutAnyPhoneNumber)
-    print(" - Total of contacts without fax number:",
-          report.nJobsWithoutAnyFaxNumber)
+        # Scrape + get a scrape report
+        startTime = time.time()
+        report = jobs.scrape()
+        print("🕒 Scraping took ", time.time() - startTime, "seconds")
 
-    # Check if there are valid E-Mails:
-    if len(report.jobs) - report.nJobsWithoutAnyEmailAddress <= 0:
-        print()
-        print("❌ Please change your search filter. I cannot find any contact with a valid E-Mail address")
-        exit()
+        # Print report
+        print("📊 SwissJobRightNow - Finder report")
+        print(" - Total of contacts found:", len(report.jobs))
+        print(" - Total of contacts without E-Mail:",
+              report.nJobsWithoutAnyEmailAddress)
+        print(" - Total of contacts without phone number:",
+              report.nJobsWithoutAnyPhoneNumber)
+        print(" - Total of contacts without fax number:",
+              report.nJobsWithoutAnyFaxNumber)
 
-    # Check if user has specified a cover letter
-    if config.getConfig().get("presentationLetter") != None:
-        print("✅ User specified a cover letter found")
+        # Check if there are valid E-Mails:
+        if len(report.jobs) - report.nJobsWithoutAnyEmailAddress <= 0:
+            print()
+            print(
+                "❌ Please change your search filter. I cannot find any contact with a valid E-Mail address")
+            exit()
 
-        # Wait for user input to continue
-        print()
-        input("Press enter to continue with presentation letter generation...")
-        print("🔎 Waiting for conversion server to setup..")
+        # Check if user has specified a cover letter
+        if config.getConfig().get("presentationLetter") != None:
+            print("✅ User specified a cover letter found")
 
-        # Create generator object
-        letterGenerator = PresentationLetterGenerator(config, report)
-        # Start conversion server
-        with subprocess.Popen(
-            args=["yarn", "--cwd", "src/conversion-server", "start"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            shell=False
-        ) as conversionServer:
-            for line in conversionServer.stdout:
-                # Read output
-                output = line.decode().replace("\n", "")
+            # Wait for user input to continue
+            print()
+            input("Press enter to continue with presentation letter generation...")
+            print("🔎 Waiting for conversion server to setup..")
 
-                # Check if server is ready
-                if output == "CONVERSION_SERVER_READY":
-                    # Server is ready!
-                    print("✅ Conversion server is ready..")
-                    break
+            # Create generator object
+            letterGenerator = PresentationLetterGenerator(config, report)
+            # Start conversion server
+            with subprocess.Popen(
+                args=["yarn", "--cwd", "src/conversion-server", "start"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=False
+            ) as conversionServer:
+                for line in conversionServer.stdout:
+                    # Read output
+                    output = line.decode().replace("\n", "")
 
-            # Start generator
-            print("⚠️ Starting presentation letter generation...")
-            letterGenerator.generateAll()
+                    # Check if server is ready
+                    if output == "CONVERSION_SERVER_READY":
+                        # Server is ready!
+                        print("✅ Conversion server is ready..")
+                        break
 
-            # Kill server
-            conversionServer.kill()
+                # Start generator
+                print("⚠️ Starting presentation letter generation...")
+                letterGenerator.generateAll()
+
+                # Kill server
+                conversionServer.kill()
+        else:
+            print(
+                "❌ User did not specify a cover letter. Skipping presentation letter generation")
+
+        #  Save job findings into temp file
+        os.makedirs("temp", exist_ok=True)
+        with open("temp/recover.json", "w") as f:
+            f.write(json.dumps(report.jobs))
     else:
-        print(
-            "❌ User did not specify a cover letter. Skipping presentation letter generation")
+        print("📁 Recover file found. Loading jobs from temp file...")
+        # Load jobs from temp file
+        with open("temp/recover.json", "r") as f:
+            jobs = json.loads(f.read())
+
+            # Now, build a report object
+            report = ScraperReport()
+            report.jobs = jobs
+
+            for job in jobs:
+                if job["emails"] == None:
+                    report.nJobsWithoutAnyEmailAddress += 1
+                if job["phones"] == None:
+                    report.nJobsWithoutAnyPhoneNumber += 1
+                if job["faxes"] == None:
+                    report.nJobsWithoutAnyFaxNumber += 1
+
+            # Print report information
+            print("📊 SwissJobRightNow - Finder report")
+            print(" - Total of contacts found:", len(report.jobs))
+            print(" - Total of contacts without E-Mail:",
+                  report.nJobsWithoutAnyEmailAddress)
+            print(" - Total of contacts without phone number:",
+                  report.nJobsWithoutAnyPhoneNumber)
+            print(" - Total of contacts without fax number:",
+                  report.nJobsWithoutAnyFaxNumber)
 
     if input('Everything is ready now. Would you like to proceed with submitting your applications? (y/n) ') == 'y':
         # Send mail
