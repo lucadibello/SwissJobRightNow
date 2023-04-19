@@ -1,4 +1,5 @@
 from enum import Enum
+import random
 import time
 from xmlrpc.client import Boolean
 from modules.config.config import Config
@@ -36,47 +37,61 @@ class MailSender:
 
     def sendAll(self) -> MailSenderReport:
         # Create session
-        with smtplib.SMTP_SSL(
+        mailServer = smtplib.SMTP_SSL(
             host=self.config.get("email").get("smtp").get("server"),
             port=self.config.get("email").get("smtp").get("port"),
             context=ssl.create_default_context()
-        ) as mailServer:
-            # Login to mailserver
-            doLogin = True
+        )
+        mailServer.login(
+            self.config.get("email").get("smtp").get("email"),
+            self.config.get("email").get("smtp").get("password")
+        )
 
-            for idx, job in enumerate(self.scraperReport.jobs):
+        # Login to mailserver
+        redoLogin = True
 
-                # Check if login is required
-                if doLogin:
-                    mailServer.login(
-                        self.config.get("email").get("smtp").get("email"),
-                        self.config.get("email").get("smtp").get("password")
-                    )
-                    doLogin = False
+        for idx, job in enumerate(self.scraperReport.jobs):
+            # Check if login is required
+            if redoLogin:
+                print("Relogging in to mail server...")
+                mailServer = smtplib.SMTP_SSL(
+                    host=self.config.get("email").get("smtp").get("server"),
+                    port=self.config.get("email").get("smtp").get("port"),
+                    context=ssl.create_default_context()
+                )
+                mailServer.login(
+                    self.config.get("email").get("smtp").get("email"),
+                    self.config.get("email").get("smtp").get("password")
+                )
+                redoLogin = False
 
-                # Wait 1 second per E-Mail to prevent spamming
-                time.sleep(1)
+            def sleep():
+                # To seem like a human, wait N seconds before sending next mail (random between 5 and 20 seconds)
+                sleepTime = random.randint(5, 20)
+                print("Waiting", sleepTime,
+                      "seconds before sending next mail...")
+                time.sleep(sleepTime)
 
-                # Send mail to company
-                status = self._sendMail(job, mailServer)
+            # Send mail to company
+            status = self._sendMail(job, mailServer)
 
-                # Check status
-                if (status == EmailSenderStatus.OK):
-                    print("Job", idx, " - ✅ Email sent successfully to:",
-                          ",".join(job.get("emails")))
-                    self.report.increaseSentCounter()
-                elif (status == EmailSenderStatus.NO_EMAIL):
-                    print(
-                        "Job", idx, "- 🙃 I didn't find an email address for this company, cannot send E-Mail")
-                    self.report.increaseErrorCounter()
-                elif (status == EmailSenderStatus.ERROR):
-                    print("Job", idx, "- ❌ Error occurred while sending E-Mail")
-                    self.report.increaseErrorCounter()
-
-                    # Wait 1 minute to prevent spamming
-                    print("Waiting 1 minute to prevent spamming...")
-                    doLogin = True
-                    time.sleep(60)
+            # Check status
+            if (status == EmailSenderStatus.OK):
+                print("Job", idx, " - ✅ Email sent successfully to:",
+                      ",".join(job.get("emails")))
+                self.report.increaseSentCounter()
+                sleep()
+            elif (status == EmailSenderStatus.NO_EMAIL):
+                print(
+                    "Job", idx, "- 🙃 I didn't find an email address for this company, cannot send E-Mail")
+                self.report.increaseErrorCounter()
+            elif (status == EmailSenderStatus.ERROR):
+                print("Job", idx, "- ❌ Error occurred while sending E-Mail")
+                self.report.increaseErrorCounter()
+                #  Sleep 60 seconds
+                time.sleep(60)
+                #  Redo login
+                redoLogin = True
 
         # Return report
         return self.report

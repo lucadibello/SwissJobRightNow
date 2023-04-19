@@ -151,7 +151,7 @@ def main():
                   report.nJobsWithoutAnyPhoneNumber)
             print(" - Total of contacts without fax number:",
                   report.nJobsWithoutAnyFaxNumber)
-
+    
     if input('Everything is ready now. Would you like to proceed with submitting your applications? (y/n) ') == 'y':
         # Send mail
         mailSender = MailSender(config, report)
